@@ -1,44 +1,36 @@
-# 🍽️ Smart Meal Prediction System
+🍽️ Smart Meal Prediction System
 
 A full-stack web application to manage meal attendance, reduce food waste, and calculate fines for students who skip meals without prior notice. Built using **React**, **Flask**, and **SQLite**.
 
----
-
-## 📌 Problem Statement
+📌 Problem Statement
 
 Hostels and canteens often face food wastage and cost inefficiencies due to unpredictable student attendance at meals. This system allows students to mark attendance for each meal of the day (breakfast, lunch, snacks, dinner), helping admins prepare the right amount of food.
 
----
+🚀 Features
 
-## 🚀 Features
-
-### 🧑‍🎓 Student View
+🧑‍🎓 Student View
 - Submit attendance for individual meals.
 - Session-based meal selection (prevents multiple submissions).
 - Automatically disables submissions past deadlines.
 
-### 🛠️ Admin Panel
+🛠️ Admin Panel
 - View all responses submitted on a selected date.
 - View meal-wise counts to prepare food efficiently.
 - Mark actual attendance for students.
 - Calculate and view fines for no-shows.
 - Delete invalid or test entries.
 
----
+🛠 Tech Stack
 
-## 🛠 Tech Stack
+ Part         Tech                     
+---------------------------------------
+ Frontend   -  React.js, HTML, CSS      
+ Backend    -  Flask (Python)           
+ Database   -  SQLite                   
+ APIs       -  RESTful API              
+ Tools      -  Git, GitHub, VS Code     
 
-| Part        | Tech                     |
-|-------------|--------------------------|
-| Frontend    | React.js, HTML, CSS      |
-| Backend     | Flask (Python)           |
-| Database    | SQLite                   |
-| APIs        | RESTful API              |
-| Tools       | Git, GitHub, VS Code     |
-
----
-
-## 📂 Project Structure
+📂 Project Structure
 
 ```
 smart-meal-system/
@@ -54,11 +46,9 @@ smart-meal-system/
 └── requirements.txt
 ```
 
----
+⚙️ Setup Instructions
 
-## ⚙️ Setup Instructions
-
-### 🔧 Backend (Flask)
+🔧 Backend (Flask)
 
 1. Navigate to the backend folder:
    ```bash
@@ -75,7 +65,7 @@ smart-meal-system/
    python app.py
    ```
 
-### 🌐 Frontend (React)
+ 🌐 Frontend (React)
 
 1. Navigate to the frontend folder:
    ```bash
@@ -94,49 +84,36 @@ smart-meal-system/
 
 The frontend will run at `http://localhost:3000`, and backend at `http://localhost:5000`.
 
----
 
-## 📊 API Endpoints
+ 📊 API Endpoints
 
-### 🔁 Student APIs
+ 🔁 Student APIs
 - `POST /api/submit` – Submit a meal response.
 - `GET /api/responses/<date>` – Fetch all responses for a specific date.
 
-### 🧾 Admin APIs
+ 🧾 Admin APIs
 - `POST /api/mark_attendance` – Mark a student as attended.
 - `DELETE /api/delete/<id>` – Delete a student response.
 - `GET /api/fines/<date>` – Get no-show count and fines.
 - `GET /api/summary/<date>` – Get meal-wise preparation counts.
 
----
+ 📸 Screenshots
 
-## 📸 Screenshots
 
-> (Add screenshots here if you have them!)
+![Screenshot 2025-05-30 112705](https://github.com/user-attachments/assets/5156f9e6-3dae-4e71-bc63-e7fba9602825)
+![Screenshot 2025-05-30 112729](https://github.com/user-attachments/assets/33b58d7a-210a-4138-a8ff-a8e67a995677)
+![Screenshot 2025-05-30 112745](https://github.com/user-attachments/assets/ba746232-7171-4b4d-8a5d-fc269317f735)
+![Screenshot 2025-05-30 112758](https://github.com/user-attachments/assets/974c3c8a-2c39-4f24-b2c6-482b7ebd6601)
+![Screenshot 2025-05-30 112809](https://github.com/user-attachments/assets/94c6f6c2-49c9-487e-8bb4-d6bd09bc50d7)
 
----
-
-## 🔮 Future Improvements
-
-- Add user authentication (students and admins).
-- Set automatic cron-based deadlines for each meal.
-- Export reports as CSV or Excel.
-- Mobile responsiveness and PWA support.
-
----
-
-## 🙌 Acknowledgements
+🙌 Acknowledgements
 
 Built as a self-directed project to solve real-world hostel problems using full-stack development.
 
----
+📧 Contact
 
-## 📧 Contact
-
-**Developer:** [Your Name]  
-**Email:** your.email@example.com  
-**GitHub:** [github.com/your-username](https://github.com/your-username)
-
----
+**Developer:** [Reddi Karunya]  
+**Email:** Karunya7806@gmail.com  
+**GitHub:** [github.com/Reddi-Karunya](https://github.com/Reddi-Karunya)
 
 ⭐ *If you like this project, don't forget to give it a star on GitHub!*
