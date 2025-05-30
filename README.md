@@ -120,7 +120,8 @@ Built as a self-directed project to solve real-world hostel problems using full-
 📧 Contact
 
 **Developer:** [Reddi Karunya]  
-**Email:** Karunya7806@gmail.com  
+**Email:** Karunya7806@gmail.com 
+**Contact:** 8125484066
 **GitHub:** [github.com/Reddi-Karunya](https://github.com/Reddi-Karunya)
 
 ⭐ *If you like this project, don't forget to give it a star on GitHub!*
