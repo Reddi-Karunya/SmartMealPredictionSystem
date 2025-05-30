@@ -106,6 +106,13 @@ The frontend will run at `http://localhost:3000`, and backend at `http://localho
 ![Screenshot 2025-05-30 112758](https://github.com/user-attachments/assets/974c3c8a-2c39-4f24-b2c6-482b7ebd6601)
 ![Screenshot 2025-05-30 112809](https://github.com/user-attachments/assets/94c6f6c2-49c9-487e-8bb4-d6bd09bc50d7)
 
+💡 Future Scope
+
+- Add mobile-responsive design
+- Export reports in PDF/Excel format
+- Admin authentication with JWT
+- Email alerts/reminders before meal deadline
+
 🙌 Acknowledgements
 
 Built as a self-directed project to solve real-world hostel problems using full-stack development.
