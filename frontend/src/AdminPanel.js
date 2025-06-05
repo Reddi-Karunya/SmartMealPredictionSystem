@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 
 function AdminPanel() {
   const [data, setData] = useState({
@@ -9,22 +9,21 @@ function AdminPanel() {
     error: null
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
   const today = new Date().toISOString().split('T')[0];
 
-  // Changed to useCallback - only this line modified
   const fetchData = useCallback(async () => {
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
-      
+
       const [mealsRes, finesRes, countsRes] = await Promise.all([
         fetch(`http://localhost:5000/api/responses/${today}`),
         fetch(`http://localhost:5000/api/fines/${today}`),
         fetch(`http://localhost:5000/api/meal_counts/${today}`)
       ]);
 
-      if (!mealsRes.ok) throw new Error('Failed to fetch meals');
-      if (!finesRes.ok) throw new Error('Failed to fetch fines');
-      if (!countsRes.ok) throw new Error('Failed to fetch meal counts');
+      if (!mealsRes.ok || !finesRes.ok || !countsRes.ok)
+        throw new Error('One or more requests failed');
 
       const [meals, fines, counts] = await Promise.all([
         mealsRes.json(),
@@ -42,21 +41,14 @@ function AdminPanel() {
     } catch (error) {
       setData(prev => ({ ...prev, loading: false, error: error.message }));
     }
-  }, [today]); // Added dependency array
+  }, [today]);
 
-  // Only added fetchData to dependencies array below
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, [fetchData]); // Added fetchData here
+  }, [fetchData]);
 
-  /* 
-   ********************************************
-   * EVERYTHING BELOW THIS LINE REMAINS EXACTLY 
-   * THE SAME AS YOUR ORIGINAL CODE
-   ********************************************
-  */
   const handleAction = async (action, id) => {
     try {
       let response;
@@ -73,12 +65,17 @@ function AdminPanel() {
         });
       }
 
-      if (!response.ok) throw new Error(`Failed to ${action === 'mark' ? 'mark attendance' : 'delete meal'}`);
+      if (!response.ok) throw new Error(`Failed to ${action}`);
       await fetchData();
     } catch (error) {
       alert(error.message);
     }
   };
+
+  const filteredMeals = data.meals.filter(meal =>
+    meal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    meal.hostel.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (data.loading) return <div className="loading">Loading...</div>;
   if (data.error) return <div className="error">Error: {data.error}</div>;
@@ -110,9 +107,25 @@ function AdminPanel() {
         </div>
       </div>
 
-      <h3>Meal Responses ({data.meals.length})</h3>
-      {data.meals.length === 0 ? (
-        <p>No meal responses found for today.</p>
+      <div style={{ margin: '20px 0' }}>
+        <input
+          type="text"
+          placeholder="Search by name or hostel..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{
+            padding: '10px',
+            width: '100%',
+            maxWidth: '400px',
+            borderRadius: '4px',
+            border: '1px solid #ccc'
+          }}
+        />
+      </div>
+
+      <h3>Meal Responses ({filteredMeals.length})</h3>
+      {filteredMeals.length === 0 ? (
+        <p>No meal responses match your search.</p>
       ) : (
         <div className="table-container">
           <table>
@@ -122,12 +135,11 @@ function AdminPanel() {
                 <th>Hostel</th>
                 <th>Meal Type</th>
                 <th>Status</th>
-                <th>Time</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {data.meals.map(meal => (
+              {filteredMeals.map(meal => (
                 <tr key={meal.id}>
                   <td>{meal.name}</td>
                   <td>{meal.hostel}</td>
@@ -135,20 +147,13 @@ function AdminPanel() {
                   <td className={meal.attended ? 'attended' : 'not-attended'}>
                     {meal.attended ? 'Attended' : 'Not Attended'}
                   </td>
-                  <td>{new Date(meal.timestamp).toLocaleTimeString()}</td>
                   <td className="actions">
                     {!meal.attended && (
-                      <button 
-                        onClick={() => handleAction('mark', meal.id)}
-                        className="mark-btn"
-                      >
+                      <button onClick={() => handleAction('mark', meal.id)} className="mark-btn">
                         Mark Attended
                       </button>
                     )}
-                    <button 
-                      onClick={() => handleAction('delete', meal.id)}
-                      className="delete-btn"
-                    >
+                    <button onClick={() => handleAction('delete', meal.id)} className="delete-btn">
                       Delete
                     </button>
                   </td>
