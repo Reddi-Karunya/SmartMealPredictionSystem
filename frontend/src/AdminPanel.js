@@ -17,9 +17,9 @@ function AdminPanel() {
       setData(prev => ({ ...prev, loading: true, error: null }));
 
       const [mealsRes, finesRes, countsRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/responses/${today}`),
-        fetch(`http://localhost:5000/api/fines/${today}`),
-        fetch(`http://localhost:5000/api/meal_counts/${today}`)
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/responses/${today}`),
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/fines/${today}`),
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/meal_counts/${today}`)
       ]);
 
       if (!mealsRes.ok || !finesRes.ok || !countsRes.ok)
