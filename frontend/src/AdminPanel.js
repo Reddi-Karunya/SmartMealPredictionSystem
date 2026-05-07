@@ -1,84 +1,171 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function AdminPanel() {
-  const [data, setData] = useState({
-    meals: [],
-    fines: { no_show_count: 0, total_fines: 0 },
-    mealCounts: { breakfast: 0, lunch: 0, snacks: 0, dinner: 0 },
-    loading: true,
-    error: null
-  });
-
+  const [meals, setMeals] = useState([]);
+  const [fines, setFines] = useState({ no_show_count: 0, total_fines: 0 });
+  const [mealCounts, setMealCounts] = useState({ breakfast: 0, lunch: 0, snacks: 0, dinner: 0 });
+  const [predictions, setPredictions] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
   const today = new Date().toISOString().split('T')[0];
+  const dayOfWeek = new Date().getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const dayType = isWeekend ? 'weekend' : 'weekday';
 
-  const fetchData = useCallback(async () => {
+  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  const getFallbackPrediction = (count, mealType) => {
+    const reductionMap = {
+      'breakfast': 0.20,
+      'lunch': 0.10,
+      'snacks': 0.25,
+      'dinner': 0.05
+    };
+    const reduction = reductionMap[mealType] || 0.10;
+    return {
+      predicted: Math.floor(count * (1 - reduction)),
+      confidence: 'medium',
+      reason: 'Using fallback logic: typical reduction based on meal type'
+    };
+  };
+
+  const fetchPrediction = async (mealType, count) => {
     try {
-      setData(prev => ({ ...prev, loading: true, error: null }));
-
-      const [mealsRes, finesRes, countsRes] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/responses/${today}`),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/fines/${today}`),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/meal_counts/${today}`)
-      ]);
-
-      if (!mealsRes.ok || !finesRes.ok || !countsRes.ok)
-        throw new Error('One or more requests failed');
-
-      const [meals, fines, counts] = await Promise.all([
-        mealsRes.json(),
-        finesRes.json(),
-        countsRes.json()
-      ]);
-
-      setData({
-        meals,
-        fines,
-        mealCounts: counts,
-        loading: false,
-        error: null
+      const response = await fetch(`${API_BASE}/api/predict-meal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          totalSelected: count,
+          mealType,
+          day: dayType
+        })
       });
-    } catch (error) {
-      setData(prev => ({ ...prev, loading: false, error: error.message }));
+      
+      if (response.ok) {
+        return await response.json();
+      } else {
+        return getFallbackPrediction(count, mealType);
+      }
+    } catch (e) {
+      console.error(`Prediction error for ${mealType}:`, e);
+      return getFallbackPrediction(count, mealType);
     }
-  }, [today]);
+  };
+
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const countsResponse = await fetch(`${API_BASE}/api/meal_counts/${today}`);
+      if (!countsResponse.ok) throw new Error('Failed to load meal counts');
+      const counts = await countsResponse.json();
+      setMealCounts(counts);
+
+      const mealsResponse = await fetch(`${API_BASE}/api/responses/${today}`);
+      if (mealsResponse.ok) {
+        setMeals(await mealsResponse.json());
+      }
+
+      const finesResponse = await fetch(`${API_BASE}/api/fines/${today}`);
+      if (finesResponse.ok) {
+        setFines(await finesResponse.json());
+      }
+
+      const initialPredictions = {};
+      for (const [mealType, count] of Object.entries(counts)) {
+        initialPredictions[mealType] = getFallbackPrediction(count, mealType);
+      }
+      setPredictions(initialPredictions);
+      setLoading(false);
+
+      const newPredictions = {};
+      for (const [mealType, count] of Object.entries(counts)) {
+        newPredictions[mealType] = await fetchPrediction(mealType, count);
+      }
+      setPredictions(newPredictions);
+
+    } catch (err) {
+      console.error('Load data error:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
+    loadAllData();
+    const interval = setInterval(loadAllData, 30000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today]);
 
   const handleAction = async (action, id) => {
     try {
       let response;
       if (action === 'mark') {
-        response = await fetch('http://localhost:5000/api/mark_attendance', {
+        response = await fetch(`${API_BASE}/api/mark_attendance`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id })
         });
       } else {
         if (!window.confirm('Are you sure you want to delete this record?')) return;
-        response = await fetch(`http://localhost:5000/api/delete/${id}`, {
+        response = await fetch(`${API_BASE}/api/delete/${id}`, {
           method: 'DELETE'
         });
       }
 
-      if (!response.ok) throw new Error(`Failed to ${action}`);
-      await fetchData();
+      if (response.ok) {
+        await loadAllData();
+      }
     } catch (error) {
       alert(error.message);
     }
   };
 
-  const filteredMeals = data.meals.filter(meal =>
+  const filteredMeals = meals.filter(meal =>
     meal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     meal.hostel.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (data.loading) return <div className="loading">Loading...</div>;
-  if (data.error) return <div className="error">Error: {data.error}</div>;
+  const getConfidenceColor = (confidence) => {
+    switch (confidence?.toLowerCase()) {
+      case 'high': return '#4CAF50';
+      case 'medium': return '#FF9800';
+      case 'low': return '#f44336';
+      default: return '#999';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="admin-container">
+        <h2>Meal Attendance System - Admin Panel</h2>
+        <h3>Date: {today}</h3>
+        <div style={{ padding: '40px', textAlign: 'center', fontSize: '1.2rem' }}>
+          Loading data... Please wait.
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admin-container">
+        <h2>Meal Attendance System - Admin Panel</h2>
+        <h3>Date: {today}</h3>
+        <div style={{ padding: '20px', color: 'red', border: '1px solid red', borderRadius: '8px', margin: '20px 0' }}>
+          Error: {error}
+          <br />
+          <button onClick={loadAllData} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#3498db', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-container">
@@ -89,7 +176,7 @@ function AdminPanel() {
         <div className="meal-counts">
           <h3>Meal Preparation Counts 🍽️</h3>
           <div className="count-grid">
-            {Object.entries(data.mealCounts).map(([meal, count]) => (
+            {Object.entries(mealCounts).map(([meal, count]) => (
               <div key={meal} className="count-card">
                 <h4>{meal.charAt(0).toUpperCase() + meal.slice(1)}</h4>
                 <p>{count}</p>
@@ -101,9 +188,29 @@ function AdminPanel() {
         <div className="fines-summary">
           <h3>Fines Summary 💰</h3>
           <div className="fines-card">
-            <p><strong>No Shows:</strong> {data.fines.no_show_count}</p>
-            <p><strong>Total Fines:</strong> ₹{data.fines.total_fines}</p>
+            <p><strong>No Shows:</strong> {fines.no_show_count}</p>
+            <p><strong>Total Fines:</strong> ₹{fines.total_fines}</p>
           </div>
+        </div>
+      </div>
+
+      <div className="ai-prediction-section">
+        <h3>AI Meal Prediction Dashboard 🤖</h3>
+        <div className="prediction-grid">
+          {Object.entries(mealCounts).map(([mealType, selectedCount]) => {
+            const prediction = predictions[mealType];
+            return (
+              <div key={mealType} className="prediction-card">
+                <h4>{mealType.charAt(0).toUpperCase() + mealType.slice(1)}</h4>
+                <div className="prediction-details">
+                  <p><strong>Selected Count:</strong> {selectedCount}</p>
+                  <p><strong>Predicted Attendance:</strong> <span className="predicted-count">{prediction?.predicted || '-'}</span></p>
+                  <p><strong>Confidence:</strong> <span style={{ color: getConfidenceColor(prediction?.confidence) }}>{prediction?.confidence || '-'}</span></p>
+                  <p><strong>Reason:</strong> {prediction?.reason || '-'}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -171,13 +278,6 @@ function AdminPanel() {
           margin: 0 auto;
           font-family: Arial, sans-serif;
         }
-        .loading, .error {
-          padding: 20px;
-          text-align: center;
-        }
-        .error {
-          color: red;
-        }
         .summary-grid {
           display: flex;
           flex-wrap: wrap;
@@ -202,6 +302,33 @@ function AdminPanel() {
           padding: 15px;
           background-color: #f8f8f8;
           border-radius: 8px;
+        }
+        .ai-prediction-section {
+          margin: 30px 0;
+        }
+        .prediction-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 20px;
+        }
+        .prediction-card {
+          padding: 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          color: white;
+        }
+        .prediction-card h4 {
+          margin: 0 0 15px 0;
+          font-size: 1.2rem;
+        }
+        .prediction-details p {
+          margin: 8px 0;
+          font-size: 0.95rem;
+        }
+        .predicted-count {
+          font-size: 1.3rem;
+          font-weight: bold;
+          color: #ffd700;
         }
         .table-container {
           overflow-x: auto;

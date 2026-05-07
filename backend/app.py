@@ -3,6 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
 import os
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -133,6 +137,101 @@ def delete_meal(id):
         return jsonify({'message': 'Meal deleted successfully'})
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/predict-meal', methods=['POST'])
+def predict_meal():
+    try:
+        data = request.json
+        total_selected = data.get('totalSelected', 0)
+        meal_type = data.get('mealType', 'breakfast')
+        day = data.get('day', 'weekday')
+        
+        reduction_map = {
+            'breakfast': 0.20,
+            'lunch': 0.10,
+            'snacks': 0.25,
+            'dinner': 0.05
+        }
+        reduction = reduction_map.get(meal_type, 0.10)
+        historical_trend = f"{int(reduction * 100)}% typical drop for {meal_type}"
+        
+        prompt = f"""You are an AI system that predicts real-world attendance for hostel meals.
+
+Your task is to estimate how many students will actually show up for a meal.
+
+Consider:
+- Not all students who select meals will attend
+- Some skip meals due to exams, outings, or personal reasons
+- Breakfast has lower attendance
+- Dinner has higher attendance
+- Weekends behave differently
+
+Input:
+Total Selected: {total_selected}
+Meal Type: {meal_type}
+Day: {day}
+Historical Trend: {historical_trend}
+
+Output format (JSON only, no extra text):
+{{
+  "predicted": number,
+  "confidence": "low" | "medium" | "high",
+  "reason": "string (1-2 lines)"
+}}"""
+
+        nvidia_api_key = os.environ.get('NVIDIA_API_KEY')
+        fallback_prediction = int(total_selected * (1 - reduction))
+        
+        if not nvidia_api_key:
+            return jsonify({
+                'predicted': fallback_prediction,
+                'confidence': 'medium',
+                'reason': 'Using fallback logic: typical reduction based on meal type'
+            })
+        
+        try:
+            response = requests.post(
+                'https://integrate.api.nvidia.com/v1/chat/completions',
+                headers={
+                    'Authorization': f'Bearer {nvidia_api_key}',
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'model': 'meta/llama-3.1-405b-instruct',
+                    'messages': [{'role': 'user', 'content': prompt}],
+                    'temperature': 0.3,
+                    'max_tokens': 500
+                },
+                timeout=60
+            )
+            
+            if response.ok:
+                result = response.json()
+                ai_response = result['choices'][0]['message']['content'].strip()
+                
+                ai_response = ai_response.replace('```json', '').replace('```', '').strip()
+                
+                import json
+                parsed = json.loads(ai_response)
+                
+                return jsonify({
+                    'predicted': int(parsed.get('predicted', fallback_prediction)),
+                    'confidence': parsed.get('confidence', 'medium'),
+                    'reason': parsed.get('reason', 'AI prediction')
+                })
+            else:
+                raise Exception(f"NVIDIA API error: {response.status_code}")
+                
+        except Exception as e:
+            print(f"AI prediction failed: {e}")
+            return jsonify({
+                'predicted': fallback_prediction,
+                'confidence': 'medium',
+                'reason': 'Fallback logic used due to AI service error'
+            })
+            
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
