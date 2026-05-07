@@ -6,6 +6,10 @@ A full-stack web application to manage meal attendance, reduce food waste, and c
 
 Hostels and canteens often face food wastage and cost inefficiencies due to unpredictable student attendance at meals. This system allows students to mark attendance for each meal of the day (breakfast, lunch, snacks, dinner), helping admins prepare the right amount of food.
 
+🌐 Live Demo
+
+Check out the live application: [https://smart-meal-prediction-system-26zd.vercel.app/](https://smart-meal-prediction-system-26zd.vercel.app/)
+
 🚀 Features
 
 🧑‍🎓 Student View
@@ -29,10 +33,6 @@ Hostels and canteens often face food wastage and cost inefficiencies due to unpr
  Database   -  SQLite                   
  APIs       -  RESTful API              
  Tools      -  Git, GitHub, VS Code     
-
-🌐 Live Demo
-
-Check out the live application: [https://smart-meal-prediction-system-26zd.vercel.app/](https://smart-meal-prediction-system-26zd.vercel.app/)
 
 📂 Project Structure
 
