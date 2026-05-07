@@ -99,7 +99,7 @@ The frontend will run at `http://localhost:3000`, and backend at `http://localho
 - `POST /api/mark_attendance` – Mark a student as attended.
 - `DELETE /api/delete/<id>` – Delete a student response.
 - `GET /api/fines/<date>` – Get no-show count and fines.
-- `GET /api/summary/<date>` – Get meal-wise preparation counts.
+- `GET /api/meal_counts/<date>` – Get meal-wise preparation counts.
 
  📸 Screenshots
 
