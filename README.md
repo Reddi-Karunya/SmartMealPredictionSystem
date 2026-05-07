@@ -30,6 +30,10 @@ Hostels and canteens often face food wastage and cost inefficiencies due to unpr
  APIs       -  RESTful API              
  Tools      -  Git, GitHub, VS Code     
 
+🌐 Live Demo
+
+Check out the live application: [https://smart-meal-prediction-system-26zd.vercel.app/](https://smart-meal-prediction-system-26zd.vercel.app/)
+
 📂 Project Structure
 
 ```
